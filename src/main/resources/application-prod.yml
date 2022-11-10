@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://rm-bp11oq33l4y2kht4ulo.mysql.rds.aliyuncs.com/lwl?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+    username: user_lwl
+    password: Li8935696
+  session:
+    timeout: 86400
+server:
+  address: 0.0.0.0
