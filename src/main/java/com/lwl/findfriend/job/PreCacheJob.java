@@ -44,7 +44,7 @@ public class PreCacheJob {
     public void doCacheRecommendUser() {
         RLock lock = redissonClient.getLock("findfriend:precachejob:docache:lock");
         try {
-            if (lock.tryLock(0, 30000, TimeUnit.MILLISECONDS)) {
+            if (lock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
                 for (Long userId : mainUserList) {
                     //查库
                     QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -57,6 +57,11 @@ public class PreCacheJob {
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            //只释放自己的锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
     }
 }
