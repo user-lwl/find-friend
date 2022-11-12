@@ -1,4 +1,4 @@
-package com.lwl.findfriend.model.domain.request;
+package com.lwl.findfriend.model.request;
 
 import lombok.Data;
 
