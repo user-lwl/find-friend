@@ -3,6 +3,7 @@ package com.lwl.findfriend.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lwl.findfriend.common.BaseResponse;
+import com.lwl.findfriend.common.DeleteRequest;
 import com.lwl.findfriend.common.ErrorCode;
 import com.lwl.findfriend.common.ResultUtils;
 import com.lwl.findfriend.exception.BusinessException;
@@ -130,10 +131,11 @@ public class TeamController {
     }
 
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestBody long id, HttpServletRequest request) {
-        if (id <= 0) {
+    public BaseResponse<Boolean> deleteTeam(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+        if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        long id = deleteRequest.getId();
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.deleteTeam(id, loginUser);
         if (!result) {
