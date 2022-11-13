@@ -1,7 +1,7 @@
 package com.lwl.findfriend.service;
 
-import com.lwl.findfriend.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lwl.findfriend.model.domain.User;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -81,4 +81,12 @@ public interface UserService extends IService<User> {
      * @return 是否为管理员
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 匹配用户
+     * @param num 数量
+     * @param loginUser 当前用户
+     * @return 用户信息List
+     */
+    List<User> matchUsers(long num, User loginUser);
 }
