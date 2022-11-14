@@ -10,6 +10,7 @@ import com.lwl.findfriend.mapper.UserMapper;
 import com.lwl.findfriend.model.domain.User;
 import com.lwl.findfriend.service.UserService;
 import com.lwl.findfriend.utils.AlgorithmUtils;
+import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -314,28 +315,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public List<User> matchUsers(long num, User loginUser) {
-        List<User> userList = this.list();
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("id", "tags");
+        queryWrapper.isNotNull("tags");
+        List<User> userList = this.list(queryWrapper);
         String tags = loginUser.getTags();
         Gson gson = new Gson();
         List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
         }.getType());
         //<下标，相似度>
-        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();
-        for (int i = 0; i < userList.size(); i++) {
-            User user = userList.get(i);
+        List<Pair<User, Long>> list = new ArrayList<>();
+        for (User user : userList) {
             String userTags = user.getTags();
-            //无标签
-            if (StringUtils.isBlank(userTags)) {
+            //无标签 或 用户自己
+            if (StringUtils.isBlank(userTags) || user.getId() == loginUser.getId()) {
                 continue;
             }
-            List<String> userTagList = gson.fromJson(userTags, new TypeToken<List<String>>() {}.getType());
+            List<String> userTagList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());
             long distance = AlgorithmUtils.minDistance(tagList, userTagList);
-            indexDistanceMap.put(i, distance);
+            list.add(new Pair<>(user, distance));
         }
-        List<Integer> maxDistanceIndexList = indexDistanceMap.keySet().stream().limit(num).collect(Collectors.toList());
-        return maxDistanceIndexList.stream()
-                .map(index -> getSafetyUser(userList.get(index)))
+        // 编辑距离排序
+        List<Pair<User, Long>> topUserPairList = list.stream()
+                .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
+                .limit(num)
                 .collect(Collectors.toList());
+        // userId列表
+        List<Long> userIdList = topUserPairList.stream().map(pair -> pair.getKey().getId()).collect(Collectors.toList());
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.in("id", userIdList);
+        Map<Long, List<User>> userIdUserListMap = this.list(userQueryWrapper)
+                .stream()
+                .map(this::getSafetyUser)
+                .collect(Collectors.groupingBy(User::getId));
+        List<User> users = new ArrayList<>();
+        for (Long userId : userIdList) {
+            users.add(userIdUserListMap.get(userId).get(0));
+        }
+        return users;
     }
 }
 
