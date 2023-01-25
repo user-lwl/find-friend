@@ -1,0 +1,10 @@
+tencent-cos:
+  secret-id: Secret-ID
+  secret-key: Secret-Key
+  app-id: AppID
+  bucket-name: BucketName
+  bucket-region: region
+  # 上传前缀
+  path: images/
+  # 最大文件限制
+  max-file-size: 10485760
