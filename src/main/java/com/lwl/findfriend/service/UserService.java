@@ -89,4 +89,14 @@ public interface UserService extends IService<User> {
      * @return 用户信息List
      */
     List<User> matchUsers(long num, User loginUser);
+
+    /**
+     * 更新密码
+     * @param user 用户信息
+     * @param loginUser 当前用户
+     * @param userAccount 账号
+     * @param oldPassword 旧密码
+     * @return 是否更新成功
+     */
+    int updatePassword(User user, User loginUser, String userAccount, String oldPassword);
 }

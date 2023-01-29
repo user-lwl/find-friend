@@ -207,4 +207,20 @@ public class TeamController {
         return ResultUtils.success(teamList);
     }
 
+    /**
+     * 根据队伍id获取队伍成员信息
+     * @param teamId 队伍id
+     * @return 队伍成员信息
+     */
+    @GetMapping("/list/my/team/users")
+    public BaseResponse<List<User>> getUserByTeamId(Integer teamId) {
+        List<Long> userId = userTeamService.getUserIdByTeamId(teamId);
+        List<User> userList = userService.listByIds(userId);
+        List<User> safetyUserList = new ArrayList<>();
+        for (User user : userList) {
+            safetyUserList.add(userService.getSafetyUser(user));
+        }
+        return ResultUtils.success(safetyUserList);
+    }
+
 }

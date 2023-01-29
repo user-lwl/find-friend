@@ -250,6 +250,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (oldUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR);
         }
+        // 过滤字段
+        if (user.getUserStatus() != null && !Objects.equals(user.getUserStatus(), oldUser.getUserStatus())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (user.getCreateTime() != null && !Objects.equals(user.getCreateTime(), oldUser.getCreateTime())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (user.getUpdateTime() != null && !Objects.equals(user.getUpdateTime(), oldUser.getUpdateTime())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (user.getUserRole() != null && !Objects.equals(user.getUserRole(), oldUser.getUserRole())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if (user.getUserAccount() != null && !Objects.equals(user.getUserAccount(), oldUser.getUserAccount())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        // 加密
+        user.setUserPassword(DigestUtils.md5DigestAsHex((SALT + user.getUserPassword()).getBytes()));
+        //更新
         return userMapper.updateById(user);
     }
 
@@ -319,6 +338,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.select("id", "tags");
         queryWrapper.isNotNull("tags");
         List<User> userList = this.list(queryWrapper);
+        if (userList == null) {
+            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR);
+        }
         String tags = loginUser.getTags();
         Gson gson = new Gson();
         List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
@@ -354,6 +376,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             users.add(userIdUserListMap.get(userId).get(0));
         }
         return users;
+    }
+
+    /**
+     * 更新密码
+     * @param user 用户信息
+     * @param loginUser 当前用户
+     * @param userAccount 账号
+     * @param oldPassword 旧密码
+     * @return 是否更新成功
+     */
+    @Override
+    public int updatePassword(User user, User loginUser, String userAccount, String oldPassword) {
+        // 仅管理员和自己
+        long userId = user.getId();
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //管理员可更新其他用户
+        //其他用户只能更新自己
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            //不是自己抛异常
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR);
+        }
+        if (!Objects.equals(oldUser.getUserPassword(), oldPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 加密
+        String newPassword = DigestUtils.md5DigestAsHex((SALT + user.getUserPassword()).getBytes());
+        user.setUserPassword(newPassword);
+        // 更新
+        return userMapper.updateById(user);
     }
 }
 

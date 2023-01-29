@@ -1,7 +1,6 @@
 package com.lwl.findfriend.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lwl.findfriend.common.BaseResponse;
 import com.lwl.findfriend.common.ErrorCode;
 import com.lwl.findfriend.common.ResultUtils;
@@ -140,22 +139,37 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @PostMapping("/update/password")
+    public BaseResponse<Integer> updatePassword(@RequestBody User user, HttpServletRequest request, String oldPassword) {
+        //校验参数是否为空
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        String userAccount = user.getUserAccount();
+        //更新
+        int result = userService.updatePassword(user, loginUser, userAccount, oldPassword);
+        return ResultUtils.success(result);
+    }
+
     @GetMapping("/recommend")
-    public BaseResponse<Page<User>> recommendUsers(long pageSize, long pagNum, HttpServletRequest request) {
+    public BaseResponse<List<User>> recommendUsers(long num, HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         User loginUser = userService.getLoginUser(request);
         String redisKey = String.format("findfriend:user:recommend:%s", loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         //先查缓存
-        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
-        if (userPage != null) {
-            return ResultUtils.success(userPage);
+        List<User> users = (List<User>) valueOperations.get(redisKey);
+        if (users != null) {
+            return ResultUtils.success(users);
         }
         //查库
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        userPage = userService.page(new Page<>(pagNum, pageSize), queryWrapper);
+        users = userService.matchUsers(num, loginUser);
         //写缓存
-        valueOperations.set(redisKey, userPage, 60000, TimeUnit.MILLISECONDS);
-        return ResultUtils.success(userPage);
+        valueOperations.set(redisKey, users, 60000, TimeUnit.MILLISECONDS);
+        return ResultUtils.success(users);
     }
 
     /**
