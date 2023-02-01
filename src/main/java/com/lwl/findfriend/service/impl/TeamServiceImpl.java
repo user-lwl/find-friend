@@ -169,7 +169,12 @@ class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         //不展示过期队伍
         queryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
-        List<Team> teamList = this.list(queryWrapper);
+        List<Team> teamList = null;
+        try {
+            teamList = this.list(queryWrapper);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         if (CollectionUtils.isEmpty(teamList)) {
             return new ArrayList<>();
         }
